@@ -14,6 +14,49 @@ import {
 } from 'lucide-react';
 
 const Dashboard = () => {
+  // Dados das ordens para calcular lucros
+  const ordens = [
+    {
+      id: 'OS-001',
+      cliente: 'João Silva',
+      servico: 'Manutenção Notebook',
+      status: 'Em Andamento',
+      orcamento: 150.00,
+      custo: 80.00,
+      data: '07/01/2025',
+    },
+    {
+      id: 'OS-002',
+      cliente: 'Maria Santos',
+      servico: 'Reparo Smartphone',
+      status: 'Aguardando Peças',
+      orcamento: 280.00,
+      custo: 180.00,
+      data: '07/01/2025',
+    },
+    {
+      id: 'OS-003',
+      cliente: 'Pedro Costa',
+      servico: 'Formatação PC',
+      status: 'Finalizada',
+      orcamento: 80.00,
+      custo: 20.00,
+      data: '06/01/2025',
+    },
+  ];
+
+  const calcularLucroTotal = () => {
+    return ordens.reduce((total, ordem) => {
+      return total + (ordem.orcamento - ordem.custo);
+    }, 0).toFixed(2);
+  };
+
+  const calcularFaturamento = () => {
+    return ordens.reduce((total, ordem) => {
+      return total + ordem.orcamento;
+    }, 0).toFixed(2);
+  };
+
   const stats = [
     {
       title: 'Ordens Abertas',
@@ -40,41 +83,20 @@ const Dashboard = () => {
       bgColor: 'bg-green-50',
     },
     {
-      title: 'Faturamento Mensal',
-      value: 'R$ 12.450',
-      description: 'Este mês',
+      title: 'Lucro Mensal',
+      value: `R$ ${calcularLucroTotal()}`,
+      description: 'Faturamento - Custos',
       icon: DollarSign,
       color: 'text-primary-600',
       bgColor: 'bg-primary-50',
     },
   ];
 
-  const recentOrders = [
-    {
-      id: 'OS-001',
-      cliente: 'João Silva',
-      servico: 'Manutenção Notebook',
-      status: 'Em Andamento',
-      valor: 'R$ 150,00',
-      data: '07/01/2025',
-    },
-    {
-      id: 'OS-002',
-      cliente: 'Maria Santos',
-      servico: 'Reparo Smartphone',
-      status: 'Aguardando Peças',
-      valor: 'R$ 280,00',
-      data: '07/01/2025',
-    },
-    {
-      id: 'OS-003',
-      cliente: 'Pedro Costa',
-      servico: 'Formatação PC',
-      status: 'Finalizada',
-      valor: 'R$ 80,00',
-      data: '06/01/2025',
-    },
-  ];
+  const recentOrders = ordens.map(ordem => ({
+    ...ordem,
+    valor: `R$ ${ordem.orcamento.toFixed(2)}`,
+    lucro: `R$ ${(ordem.orcamento - ordem.custo).toFixed(2)}`,
+  }));
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -121,7 +143,7 @@ const Dashboard = () => {
                 <span>Ordens Recentes</span>
               </CardTitle>
               <CardDescription>
-                Últimas ordens de serviço registradas
+                Últimas ordens de serviço com lucro calculado
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -140,6 +162,7 @@ const Dashboard = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-medium text-green-600">{order.valor}</p>
+                      <p className="text-sm text-blue-600">Lucro: {order.lucro}</p>
                       <p className="text-xs text-gray-500">{order.data}</p>
                     </div>
                   </div>
@@ -162,8 +185,16 @@ const Dashboard = () => {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Ordens Finalizadas</span>
-                  <span className="font-medium">156</span>
+                  <span className="text-sm text-gray-600">Faturamento Total</span>
+                  <span className="font-medium">R$ {calcularFaturamento()}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Lucro Total</span>
+                  <span className="font-medium text-primary-600">R$ {calcularLucroTotal()}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div className="bg-primary-500 h-2 rounded-full" style={{ width: '78%' }}></div>

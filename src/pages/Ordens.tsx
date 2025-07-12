@@ -19,6 +19,8 @@ interface OrdemServico {
   servico: string;
   defeito: string;
   orcamento: string;
+  custo: string;
+  descricaoCusto: string;
   status: 'Aberta' | 'Em Andamento' | 'Aguardando Peças' | 'Finalizada' | 'Cancelada';
   dataAbertura: string;
   dataFinalizacao?: string;
@@ -36,6 +38,8 @@ const Ordens = () => {
     servico: '',
     defeito: '',
     orcamento: '',
+    custo: '',
+    descricaoCusto: '',
     status: 'Aberta' as const,
     observacoes: '',
   });
@@ -54,6 +58,8 @@ const Ordens = () => {
       servico: 'Manutenção Notebook',
       defeito: 'Não liga, problema na fonte',
       orcamento: '150.00',
+      custo: '80.00',
+      descricaoCusto: 'Fonte nova + mão de obra',
       status: 'Em Andamento',
       dataAbertura: '05/01/2025',
     },
@@ -64,6 +70,8 @@ const Ordens = () => {
       servico: 'Reparo Smartphone',
       defeito: 'Tela trincada',
       orcamento: '280.00',
+      custo: '180.00',
+      descricaoCusto: 'Tela original + película',
       status: 'Aguardando Peças',
       dataAbertura: '06/01/2025',
     },
@@ -74,6 +82,8 @@ const Ordens = () => {
       servico: 'Formatação PC',
       defeito: 'Sistema lento, vírus',
       orcamento: '80.00',
+      custo: '20.00',
+      descricaoCusto: 'Software antivírus + tempo técnico',
       status: 'Finalizada',
       dataAbertura: '04/01/2025',
       dataFinalizacao: '06/01/2025',
@@ -103,6 +113,12 @@ const Ordens = () => {
     }
   };
 
+  const calculateLucro = (orcamento: string, custo: string) => {
+    const orc = parseFloat(orcamento) || 0;
+    const cost = parseFloat(custo) || 0;
+    return (orc - cost).toFixed(2);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -116,7 +132,9 @@ const Ordens = () => {
               ...ordem, 
               ...formData,
               clienteNome: clienteSelecionado?.nome || formData.clienteNome,
-              dataFinalizacao: formData.status === 'Finalizada' ? new Date().toLocaleDateString('pt-BR') : ordem.dataFinalizacao
+              dataFinalizacao: formData.status === 'Finalizada' && editingOrdem.status !== 'Finalizada' 
+                ? new Date().toLocaleDateString('pt-BR') 
+                : ordem.dataFinalizacao
             }
           : ordem
       ));
@@ -149,6 +167,8 @@ const Ordens = () => {
       servico: '',
       defeito: '',
       orcamento: '',
+      custo: '',
+      descricaoCusto: '',
       status: 'Aberta',
       observacoes: '',
     });
@@ -164,6 +184,8 @@ const Ordens = () => {
       servico: ordem.servico,
       defeito: ordem.defeito,
       orcamento: ordem.orcamento,
+      custo: ordem.custo,
+      descricaoCusto: ordem.descricaoCusto,
       status: ordem.status,
       observacoes: ordem.observacoes || '',
     });
@@ -171,6 +193,7 @@ const Ordens = () => {
   };
 
   const handlePrint = (ordem: OrdemServico) => {
+    const lucro = calculateLucro(ordem.orcamento, ordem.custo);
     const printContent = `
       <div style="font-family: Arial, sans-serif; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -188,6 +211,9 @@ const Ordens = () => {
           <p><strong>Serviço:</strong> ${ordem.servico}</p>
           <p><strong>Defeito Relatado:</strong> ${ordem.defeito}</p>
           <p><strong>Orçamento:</strong> R$ ${ordem.orcamento}</p>
+          <p><strong>Custo:</strong> R$ ${ordem.custo}</p>
+          <p><strong>Descrição do Custo:</strong> ${ordem.descricaoCusto}</p>
+          <p><strong>Lucro:</strong> R$ ${lucro}</p>
           <p><strong>Status:</strong> ${ordem.status}</p>
           <p><strong>Data de Abertura:</strong> ${ordem.dataAbertura}</p>
           ${ordem.dataFinalizacao ? `<p><strong>Data de Finalização:</strong> ${ordem.dataFinalizacao}</p>` : ''}
@@ -281,7 +307,7 @@ const Ordens = () => {
                     <Label htmlFor="status">Status</Label>
                     <Select 
                       value={formData.status} 
-                      onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}
+                      onValueChange={(value: 'Aberta' | 'Em Andamento' | 'Aguardando Peças' | 'Finalizada' | 'Cancelada') => setFormData(prev => ({ ...prev, status: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Status da ordem" />
@@ -319,15 +345,40 @@ const Ordens = () => {
                   />
                 </div>
                 
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="orcamento">Orçamento (R$)</Label>
+                    <Input
+                      id="orcamento"
+                      type="number"
+                      step="0.01"
+                      value={formData.orcamento}
+                      onChange={(e) => setFormData(prev => ({ ...prev, orcamento: e.target.value }))}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="custo">Custo (R$)</Label>
+                    <Input
+                      id="custo"
+                      type="number"
+                      step="0.01"
+                      value={formData.custo}
+                      onChange={(e) => setFormData(prev => ({ ...prev, custo: e.target.value }))}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="orcamento">Orçamento (R$)</Label>
-                  <Input
-                    id="orcamento"
-                    type="number"
-                    step="0.01"
-                    value={formData.orcamento}
-                    onChange={(e) => setFormData(prev => ({ ...prev, orcamento: e.target.value }))}
-                    placeholder="0.00"
+                  <Label htmlFor="descricaoCusto">Descrição do Custo</Label>
+                  <Textarea
+                    id="descricaoCusto"
+                    value={formData.descricaoCusto}
+                    onChange={(e) => setFormData(prev => ({ ...prev, descricaoCusto: e.target.value }))}
+                    placeholder="Descreva os custos envolvidos..."
                     required
                   />
                 </div>
@@ -376,9 +427,15 @@ const Ordens = () => {
                   <span className="font-medium">{ordem.clienteNome}</span>
                 </div>
                 
-                <div className="flex items-center space-x-2 text-sm">
-                  <DollarSign className="h-4 w-4 text-green-600" />
-                  <span className="font-medium text-green-600">R$ {ordem.orcamento}</span>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                    <span className="font-medium text-green-600">R$ {ordem.orcamento}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-500">Lucro:</span>
+                    <span className="font-medium text-blue-600">R$ {calculateLucro(ordem.orcamento, ordem.custo)}</span>
+                  </div>
                 </div>
                 
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -390,6 +447,13 @@ const Ordens = () => {
                   <p className="text-sm font-medium text-gray-700 mb-1">Defeito:</p>
                   <p className="text-sm text-gray-600">{ordem.defeito}</p>
                 </div>
+                
+                {ordem.descricaoCusto && (
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <p className="text-sm font-medium text-blue-700 mb-1">Custo:</p>
+                    <p className="text-sm text-blue-600">{ordem.descricaoCusto}</p>
+                  </div>
+                )}
                 
                 <div className="flex justify-between items-center pt-2">
                   <div className="flex space-x-1">
