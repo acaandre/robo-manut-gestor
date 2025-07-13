@@ -27,6 +27,8 @@ interface OrdemServico {
   observacoes?: string;
 }
 
+type StatusType = 'Aberta' | 'Em Andamento' | 'Aguardando Peças' | 'Finalizada' | 'Cancelada';
+
 const Ordens = () => {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -40,7 +42,7 @@ const Ordens = () => {
     orcamento: '',
     custo: '',
     descricaoCusto: '',
-    status: 'Aberta' as const,
+    status: 'Aberta' as StatusType,
     observacoes: '',
   });
 
@@ -307,7 +309,7 @@ const Ordens = () => {
                     <Label htmlFor="status">Status</Label>
                     <Select 
                       value={formData.status} 
-                      onValueChange={(value: 'Aberta' | 'Em Andamento' | 'Aguardando Peças' | 'Finalizada' | 'Cancelada') => setFormData(prev => ({ ...prev, status: value }))}
+                      onValueChange={(value: StatusType) => setFormData(prev => ({ ...prev, status: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Status da ordem" />
