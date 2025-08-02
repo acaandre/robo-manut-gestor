@@ -9,17 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { clienteService } from '@/services/api';
-
-interface Cliente {
-  id: string;
-  nome: string;
-  telefone: string;
-  email: string;
-  endereco: string;
-  dataCadastro: string;
-  ordensAbertas: number;
-}
+import { clienteService, Cliente } from '@/services/api';
 
 const Clientes = () => {
   const { toast } = useToast();
