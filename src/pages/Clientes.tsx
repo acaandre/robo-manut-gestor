@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,14 +9,22 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { clienteService, Cliente } from '@/services/api';
+
+interface Cliente {
+  id: string;
+  nome: string;
+  telefone: string;
+  email: string;
+  endereco: string;
+  dataCadastro: string;
+  ordensAbertas: number;
+}
 
 const Clientes = () => {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
@@ -24,28 +32,35 @@ const Clientes = () => {
     endereco: '',
   });
 
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-
-  // Carregar clientes ao montar o componente
-  useEffect(() => {
-    loadClientes();
-  }, []);
-
-  const loadClientes = async () => {
-    try {
-      setLoading(true);
-      const response = await clienteService.getAll();
-      setClientes(response);
-    } catch (error) {
-      toast({
-        title: "Erro ao carregar clientes",
-        description: "Não foi possível carregar a lista de clientes.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [clientes, setClientes] = useState<Cliente[]>([
+    {
+      id: '1',
+      nome: 'João Silva',
+      telefone: '(11) 99999-9999',
+      email: 'joao@email.com',
+      endereco: 'Rua das Flores, 123, São Paulo - SP',
+      dataCadastro: '01/12/2024',
+      ordensAbertas: 2,
+    },
+    {
+      id: '2',
+      nome: 'Maria Santos',
+      telefone: '(11) 88888-8888',
+      email: 'maria@email.com',
+      endereco: 'Av. Paulista, 456, São Paulo - SP',
+      dataCadastro: '15/11/2024',
+      ordensAbertas: 1,
+    },
+    {
+      id: '3',
+      nome: 'Pedro Costa',
+      telefone: '(11) 77777-7777',
+      email: 'pedro@email.com',
+      endereco: 'Rua Augusta, 789, São Paulo - SP',
+      dataCadastro: '20/10/2024',
+      ordensAbertas: 0,
+    },
+  ]);
 
   const filteredClientes = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,44 +68,38 @@ const Clientes = () => {
     cliente.telefone.includes(searchTerm)
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      setLoading(true);
-      
-      if (editingCliente) {
-        // Editar cliente existente
-        const updatedCliente = await clienteService.update(editingCliente.id, formData);
-        setClientes(prev => prev.map(cliente => 
-          cliente.id === editingCliente.id ? updatedCliente : cliente
-        ));
-        toast({
-          title: "Cliente atualizado!",
-          description: "Os dados do cliente foram atualizados com sucesso.",
-        });
-      } else {
-        // Criar novo cliente
-        const novoCliente = await clienteService.create(formData);
-        setClientes(prev => [...prev, novoCliente]);
-        toast({
-          title: "Cliente cadastrado!",
-          description: "Novo cliente foi adicionado com sucesso.",
-        });
-      }
-
-      setFormData({ nome: '', telefone: '', email: '', endereco: '' });
-      setEditingCliente(null);
-      setIsDialogOpen(false);
-    } catch (error) {
+    if (editingCliente) {
+      // Editar cliente existente
+      setClientes(prev => prev.map(cliente => 
+        cliente.id === editingCliente.id 
+          ? { ...cliente, ...formData }
+          : cliente
+      ));
       toast({
-        title: "Erro",
-        description: editingCliente ? "Erro ao atualizar cliente." : "Erro ao cadastrar cliente.",
-        variant: "destructive",
+        title: "Cliente atualizado!",
+        description: "Os dados do cliente foram atualizados com sucesso.",
       });
-    } finally {
-      setLoading(false);
+    } else {
+      // Criar novo cliente
+      const novoCliente: Cliente = {
+        id: Date.now().toString(),
+        ...formData,
+        dataCadastro: new Date().toLocaleDateString('pt-BR'),
+        ordensAbertas: 0,
+      };
+      setClientes(prev => [...prev, novoCliente]);
+      toast({
+        title: "Cliente cadastrado!",
+        description: "Novo cliente foi adicionado com sucesso.",
+      });
     }
+
+    setFormData({ nome: '', telefone: '', email: '', endereco: '' });
+    setEditingCliente(null);
+    setIsDialogOpen(false);
   };
 
   const handleEdit = (cliente: Cliente) => {
@@ -104,25 +113,13 @@ const Clientes = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      setLoading(true);
-      await clienteService.delete(id);
-      setClientes(prev => prev.filter(cliente => cliente.id !== id));
-      toast({
-        title: "Cliente removido!",
-        description: "O cliente foi removido do sistema.",
-        variant: "destructive",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao remover cliente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleDelete = (id: string) => {
+    setClientes(prev => prev.filter(cliente => cliente.id !== id));
+    toast({
+      title: "Cliente removido!",
+      description: "O cliente foi removido do sistema.",
+      variant: "destructive",
+    });
   };
 
   return (
@@ -204,8 +201,8 @@ const Clientes = () => {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" className="bg-primary-600 hover:bg-primary-700" disabled={loading}>
-                    {loading ? 'Salvando...' : editingCliente ? 'Atualizar' : 'Cadastrar'}
+                  <Button type="submit" className="bg-primary-600 hover:bg-primary-700">
+                    {editingCliente ? 'Atualizar' : 'Cadastrar'}
                   </Button>
                 </div>
               </form>

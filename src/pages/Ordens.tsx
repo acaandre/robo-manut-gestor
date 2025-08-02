@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit, Printer, Send, Calendar, User, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { clienteService, ordemServicoService } from '@/services/api';
 
 interface OrdemServico {
   id: string;
@@ -35,7 +34,6 @@ const Ordens = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingOrdem, setEditingOrdem] = useState<OrdemServico | null>(null);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     clienteId: '',
     clienteNome: '',
@@ -48,43 +46,51 @@ const Ordens = () => {
     observacoes: '',
   });
 
-  const [clientes, setClientes] = useState<{ id: string; nome: string }[]>([]);
-  const [ordens, setOrdens] = useState<OrdemServico[]>([]);
+  const clientes = [
+    { id: '1', nome: 'João Silva' },
+    { id: '2', nome: 'Maria Santos' },
+    { id: '3', nome: 'Pedro Costa' },
+  ];
 
-  // Carregar dados ao montar o componente
-  useEffect(() => {
-    loadClientes();
-    loadOrdens();
-  }, []);
-
-  const loadClientes = async () => {
-    try {
-      const response = await clienteService.getAll();
-      setClientes(response.map(cliente => ({ id: cliente.id, nome: cliente.nome })));
-    } catch (error) {
-      toast({
-        title: "Erro ao carregar clientes",
-        description: "Não foi possível carregar a lista de clientes.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const loadOrdens = async () => {
-    try {
-      setLoading(true);
-      const response = await ordemServicoService.getAll();
-      setOrdens(response);
-    } catch (error) {
-      toast({
-        title: "Erro ao carregar ordens",
-        description: "Não foi possível carregar a lista de ordens.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [ordens, setOrdens] = useState<OrdemServico[]>([
+    {
+      id: 'OS-001',
+      clienteId: '1',
+      clienteNome: 'João Silva',
+      servico: 'Manutenção Notebook',
+      defeito: 'Não liga, problema na fonte',
+      orcamento: '150.00',
+      custo: '80.00',
+      descricaoCusto: 'Fonte nova + mão de obra',
+      status: 'Em Andamento',
+      dataAbertura: '05/01/2025',
+    },
+    {
+      id: 'OS-002',
+      clienteId: '2',
+      clienteNome: 'Maria Santos',
+      servico: 'Reparo Smartphone',
+      defeito: 'Tela trincada',
+      orcamento: '280.00',
+      custo: '180.00',
+      descricaoCusto: 'Tela original + película',
+      status: 'Aguardando Peças',
+      dataAbertura: '06/01/2025',
+    },
+    {
+      id: 'OS-003',
+      clienteId: '3',
+      clienteNome: 'Pedro Costa',
+      servico: 'Formatação PC',
+      defeito: 'Sistema lento, vírus',
+      orcamento: '80.00',
+      custo: '20.00',
+      descricaoCusto: 'Software antivírus + tempo técnico',
+      status: 'Finalizada',
+      dataAbertura: '04/01/2025',
+      dataFinalizacao: '06/01/2025',
+    },
+  ]);
 
   const filteredOrdens = ordens.filter(ordem =>
     ordem.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,78 +121,61 @@ const Ordens = () => {
     return (orc - cost).toFixed(2);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      setLoading(true);
-      const clienteSelecionado = clientes.find(c => c.id === formData.clienteId);
+    const clienteSelecionado = clientes.find(c => c.id === formData.clienteId);
+    
+    if (editingOrdem) {
+      // Editar ordem existente
+      setOrdens(prev => prev.map(ordem => 
+        ordem.id === editingOrdem.id 
+          ? { 
+              ...ordem, 
+              ...formData,
+              clienteNome: clienteSelecionado?.nome || formData.clienteNome,
+              dataFinalizacao: formData.status === 'Finalizada' && editingOrdem.status !== 'Finalizada' 
+                ? new Date().toLocaleDateString('pt-BR') 
+                : ordem.dataFinalizacao
+            }
+          : ordem
+      ));
       
-      if (editingOrdem) {
-        // Editar ordem existente
-        const ordemData = {
-          ...formData,
-          clienteNome: clienteSelecionado?.nome || formData.clienteNome,
-          dataFinalizacao: formData.status === 'Finalizada' && editingOrdem.status !== 'Finalizada' 
-            ? new Date().toLocaleDateString('pt-BR') 
-            : editingOrdem.dataFinalizacao
-        };
-        
-        const updatedOrdem = await ordemServicoService.update(editingOrdem.id, ordemData);
-        setOrdens(prev => prev.map(ordem => 
-          ordem.id === editingOrdem.id ? updatedOrdem : ordem
-        ));
-        
-        // Simular envio de email para mudança de status
-        if (editingOrdem.status !== formData.status) {
-          toast({
-            title: "Status atualizado!",
-            description: `Email enviado para o cliente sobre a mudança para: ${formData.status}`,
-          });
-        } else {
-          toast({
-            title: "Ordem atualizada!",
-            description: "Ordem de serviço atualizada com sucesso.",
-          });
-        }
-      } else {
-        // Criar nova ordem
-        const ordemData = {
-          ...formData,
-          clienteNome: clienteSelecionado?.nome || '',
-          dataAbertura: new Date().toLocaleDateString('pt-BR'),
-        };
-        
-        const novaOrdem = await ordemServicoService.create(ordemData);
-        setOrdens(prev => [...prev, novaOrdem]);
+      // Simular envio de email para mudança de status
+      if (editingOrdem.status !== formData.status) {
         toast({
-          title: "Ordem criada!",
-          description: "Nova ordem de serviço foi criada com sucesso.",
+          title: "Status atualizado!",
+          description: `Email enviado para o cliente sobre a mudança para: ${formData.status}`,
         });
       }
-
-      setFormData({
-        clienteId: '',
-        clienteNome: '',
-        servico: '',
-        defeito: '',
-        orcamento: '',
-        custo: '',
-        descricaoCusto: '',
-        status: 'Aberta',
-        observacoes: '',
-      });
-      setEditingOrdem(null);
-      setIsDialogOpen(false);
-    } catch (error) {
+    } else {
+      // Criar nova ordem
+      const novaOrdem: OrdemServico = {
+        id: `OS-${String(ordens.length + 1).padStart(3, '0')}`,
+        ...formData,
+        clienteNome: clienteSelecionado?.nome || '',
+        dataAbertura: new Date().toLocaleDateString('pt-BR'),
+      };
+      setOrdens(prev => [...prev, novaOrdem]);
       toast({
-        title: "Erro",
-        description: editingOrdem ? "Erro ao atualizar ordem." : "Erro ao criar ordem.",
-        variant: "destructive",
+        title: "Ordem criada!",
+        description: "Nova ordem de serviço foi criada com sucesso.",
       });
-    } finally {
-      setLoading(false);
     }
+
+    setFormData({
+      clienteId: '',
+      clienteNome: '',
+      servico: '',
+      defeito: '',
+      orcamento: '',
+      custo: '',
+      descricaoCusto: '',
+      status: 'Aberta',
+      observacoes: '',
+    });
+    setEditingOrdem(null);
+    setIsDialogOpen(false);
   };
 
   const handleEdit = (ordem: OrdemServico) => {
@@ -410,8 +399,8 @@ const Ordens = () => {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" className="bg-primary-600 hover:bg-primary-700" disabled={loading}>
-                    {loading ? 'Salvando...' : editingOrdem ? 'Atualizar' : 'Criar Ordem'}
+                  <Button type="submit" className="bg-primary-600 hover:bg-primary-700">
+                    {editingOrdem ? 'Atualizar' : 'Criar Ordem'}
                   </Button>
                 </div>
               </form>
